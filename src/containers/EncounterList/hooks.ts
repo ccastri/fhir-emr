@@ -1,12 +1,13 @@
 import { TablePaginationConfig } from 'antd';
+import { Encounter, Patient, Practitioner, PractitionerRole } from 'fhir/r4b';
+import { useMemo } from 'react';
+
 import { RemoteData } from 'fhir-react/lib/libs/remoteData';
 import { extractBundleResources } from 'fhir-react/lib/services/fhir';
 import { SearchParams } from 'fhir-react/lib/services/search';
 import { mapSuccess } from 'fhir-react/lib/services/service';
 import { formatFHIRDateTime } from 'fhir-react/lib/utils/date';
 import { parseFHIRReference } from 'fhir-react/lib/utils/fhir';
-import { Encounter, Patient, Practitioner, PractitionerRole } from 'fhir/r4b';
-import { useMemo } from 'react';
 
 import { EncounterData } from 'src/components/EncountersTable/types';
 import { usePagerExtended } from 'src/hooks/pager';
@@ -25,24 +26,29 @@ interface EncountersListData {
         total: number | undefined;
     };
 }
-
+// !I've found the entry point doggggggg
 export function useEncounterList(
     filterValues: EncounterListFilterValues | undefined,
     searchParams: SearchParams = {},
 ): EncountersListData {
     const debouncedFilterValues = useDebounce(filterValues, 300);
 
-    const patientFilterValue = filterValues?.[0]?.value ?? undefined;
-    const practitionerFilterValue = filterValues?.[1]?.value ?? undefined;
+    // const patientFilterValue = filterValues?.[0]?.value ?? undefined;
+    // const practitionerFilterValue = filterValues?.[1]?.value ?? undefined;
+    const patientOrPractitionerFilterValue = filterValues?.[0]?.value ?? undefined;
     const dateFilterValue = filterValues?.[2]?.value ?? undefined;
 
     const dateParameter = dateFilterValue
-        ? [
-              `ge${formatFHIRDateTime(dateFilterValue[0])}`,
-              `le${formatFHIRDateTime(dateFilterValue[1])}`,
-          ]
+        ? [`ge${formatFHIRDateTime(dateFilterValue[0])}`, `le${formatFHIRDateTime(dateFilterValue[1])}`]
         : undefined;
 
+    //         const filters = {
+    //     $or: [
+    //         { 'participant-display': patientFilterValue },
+    //         { 'subject:Patient.name': patientFilterValue },
+    //         { 'participant-display': practitionerFilterValue },
+    //     ],
+    // };
     const queryParameters = {
         ...searchParams,
         _include: [
@@ -50,8 +56,8 @@ export function useEncounterList(
             'Encounter:participant:PractitionerRole',
             'PractitionerRole:practitioner:Practitioner',
         ],
-        'participant-display': practitionerFilterValue,
-        'subject:Patient.name': patientFilterValue,
+        'participant-display': patientOrPractitionerFilterValue,
+        'subject:Patient.name': patientOrPractitionerFilterValue,
         date: dateParameter,
         _sort: '-_lastUpdated',
     };
@@ -74,37 +80,39 @@ export function useEncounterList(
                 PractitionerRole: practitionerRoles,
             } = sourceMap;
 
-            return encounters.map((encounter) => {
-                const patient = patients.find(
-                    (patient) =>
-                        encounter.subject &&
-                        patient.id === parseFHIRReference(encounter.subject).id,
-                );
+            const filteredEncounters = encounters
+                .filter((encounter) => encounter.status !== 'finished') // Filter out "completed" encounters
+                .map((encounter) => {
+                    const patient = patients.find(
+                        (patient) => encounter.subject && patient.id === parseFHIRReference(encounter.subject).id,
+                    );
 
-                const practitionerRole = practitionerRoles.find(
-                    (practitionerRole) =>
-                        encounter.participant?.[0]!.individual &&
-                        practitionerRole.id ===
-                            parseFHIRReference(encounter.participant?.[0]!.individual).id,
-                );
+                    const practitionerRole = practitionerRoles.find(
+                        (practitionerRole) =>
+                            encounter.participant?.[0]!.individual &&
+                            practitionerRole.id === parseFHIRReference(encounter.participant?.[0]!.individual).id,
+                    );
 
-                const practitioner = practitioners.find(
-                    (practitioner) => practitionerRole?.practitioner && practitioner.id === parseFHIRReference(practitionerRole?.practitioner).id,
-                );
+                    const practitioner = practitioners.find(
+                        (practitioner) =>
+                            practitionerRole?.practitioner &&
+                            practitioner.id === parseFHIRReference(practitionerRole?.practitioner).id,
+                    );
 
-                return {
-                    id: encounter.id!,
-                    patient,
-                    practitioner,
-                    status: encounter.status,
-                    period: encounter?.period,
-                    humanReadableDate:
-                        encounter?.period?.start && formatHumanDateTime(encounter?.period?.start),
-                };
-            });
+                    return {
+                        id: encounter.id!,
+                        patient,
+                        practitioner,
+                        status: encounter.status,
+                        period: encounter?.period,
+                        humanReadableDate: encounter?.period?.start && formatHumanDateTime(encounter?.period?.start),
+                    };
+                });
+
+            return filteredEncounters;
         });
     }, [resourceResponse]);
-
+    console.log(encounterData);
     return {
         encounterDataListRD: encounterData,
         reloadEncounter: pagerManager.reload,

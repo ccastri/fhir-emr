@@ -1,11 +1,12 @@
 import { Trans } from '@lingui/macro';
 import { Empty, TablePaginationConfig } from 'antd';
 import { ColumnsType } from 'antd/lib/table';
+
 import { isLoading, isSuccess, RemoteData } from 'fhir-react/lib/libs/remoteData';
 
+import { EncounterData } from './types';
 import { SpinIndicator } from '../Spinner';
 import { Table } from '../Table';
-import { EncounterData } from './types';
 
 interface EncountersTableProps {
     columns: ColumnsType<EncounterData>;

@@ -17,27 +17,28 @@ import { matchCurrentUserRole, Role } from 'src/utils/role';
 import { useEncounterList } from './hooks';
 import { EncounterListFilters, EncounterListFilterValues } from './types';
 
+// ! Listado de columnas que se esta renderizando
 export function EncounterList() {
-    const { columnsFilterValues, onChangeColumnFilter, onResetFilters } = useSearchBar({
+    // {
+    //     id: 'practitioner',
+    //     type: 'string',
+    //     placeholder: t`Search by practitioner`,
+    // },
+ const { columnsFilterValues, onChangeColumnFilter, onResetFilters } = useSearchBar({
         columns: [
             {
-                id: 'patient',
+                id: 'patientOrPractitioner',
                 type: 'string',
-                placeholder: t`Search by patient`,
-            },
-            {
-                id: 'practitioner',
-                type: 'string',
-                placeholder: t`Search by practitioner`,
+                placeholder: t`Search by patient or practitioner`,
             },
             {
                 id: 'date',
                 type: 'date',
                 placeholder: [t`Start date`, t`End date`],
             },
-        ] as EncounterListFilters,
+        ] as EncounterListFilters, // Aquí se mantienen las dos columnas definidas en la variable EncounterListFilters
     });
-
+// !Verificar el rol de la sesion actual
     const roleSearchParams = matchCurrentUserRole({
         [Role.Admin]: () => {
             return {};
@@ -58,12 +59,19 @@ export function EncounterList() {
         roleSearchParams,
     );
 
+
+
+    //! Columnas de la tabla
     const columns = [
+// This is for rendering the columns on the screen which is fine
         {
             title: <Trans>Patient</Trans>,
-            dataIndex: 'patient',
+            dataIndex: 'patient'|| 'practitioner',
             key: 'patient',
-            render: (_text: any, resource: EncounterData) => renderHumanName(resource.patient?.name?.[0]),
+            render: (_text: any, resource: EncounterData) => renderHumanName(
+                resource.patient?.name?.[0] 
+                // resource.practitioner?.name?.[0]
+                ),
         },
         {
             title: <Trans>Practitioner</Trans>,
@@ -71,6 +79,16 @@ export function EncounterList() {
             key: 'practitioner',
             render: (_text: any, resource: EncounterData) => renderHumanName(resource.practitioner?.name?.[0]),
         },
+    //     {
+    //     title: <Trans>Patient/Practitioner</Trans>,
+    //     dataIndex: 'patient',
+    //     key: 'patient',
+    //     render: (_text: any, resource: EncounterData) => {
+    //         const patientName = renderHumanName(resource.patient?.name?.[0]);
+    //         const practitionerName = renderHumanName(resource.practitioner?.name?.[0]);
+    //         return patientName || practitionerName;
+    //     },
+    // },
         {
             title: <Trans>Status</Trans>,
             dataIndex: 'status',
@@ -119,7 +137,7 @@ export function EncounterList() {
                 <Title style={{ marginBottom: 40 }}>
                     <Trans>Encounters</Trans>
                 </Title>
-
+                {/* Este componente envia los 3 listados */}
                 <SearchBar
                     columnsFilterValues={columnsFilterValues}
                     onChangeColumnFilter={onChangeColumnFilter}

@@ -6,8 +6,11 @@ import { SearchBarColumn } from './SearchBarColumn';
 import { SearchBarData } from './types';
 
 export function SearchBar(props: SearchBarData) {
+// !   Column filter values estado actual de los inputs de busqueda
+// ! Funcion onCHange observando llos 3 listados y posibles modificaciones
+// ! El reset para volver a los valores en memoria (por default)
     const { columnsFilterValues, onChangeColumnFilter, onResetFilters } = props;
-
+// console.log(columnsFilterValues.map(item=>item))
     return (
         <S.Container>
             <Row gutter={[32, 16]}>
